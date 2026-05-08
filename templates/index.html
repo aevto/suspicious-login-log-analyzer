@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Suspicious Login Log Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 24px;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            margin-top: 0;
+            margin-bottom: 24px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 280px;
+            resize: vertical;
+            border: 1px solid #475569;
+            border-radius: 12px;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        .upload-box {
+            margin-bottom: 16px;
+            padding: 16px;
+            border: 1px dashed #475569;
+            border-radius: 12px;
+            background: #0f172a;
+        }
+
+        input[type="file"] {
+            color: #cbd5e1;
+        }
+
+        .button-row {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.92;
+        }
+
+        .secondary-btn {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+        .result-section {
+            margin-top: 24px;
+        }
+
+        .risk-box {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+
+        .risk-high {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+
+        .risk-medium {
+            background: rgba(245, 158, 11, 0.18);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+
+        .risk-low {
+            background: rgba(34, 197, 94, 0.18);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.35);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+        }
+
+        .section-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .empty {
+            color: #94a3b8;
+        }
+
+        .chart-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        canvas {
+            width: 100% !important;
+            max-height: 320px;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                margin: 20px auto;
+                padding: 16px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            textarea {
+                min-height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Suspicious Login Log Analyzer</h1>
+            <p class="subtitle">
+                Paste logs or upload a log file to detect repeated failed attempts, suspicious usernames,
+                unusual login times, and short attack bursts.
+            </p>
+
+            <form method="POST" enctype="multipart/form-data">
+                <div class="upload-box">
+                    <label><strong>Upload log file:</strong></label>
+                    <br><br>
+                    <input type="file" name="log_file" accept=".txt,.log,.out,.csv">
+                </div>
+
+                <textarea
+                    name="log_text"
+                    placeholder="Paste logs here..."
+                >{{ log_text }}</textarea>
+
+                <div class="button-row">
+                    <button type="submit">Analyze Logs</button>
+                    <button type="button" class="secondary-btn" onclick="fillSampleLogs()">Use Sample Logs</button>
+                    <button type="button" class="secondary-btn" onclick="clearLogs()">Clear</button>
+                </div>
+            </form>
+
+            {% if result %}
+            <div class="result-section">
+                <h2>Analysis Result</h2>
+                <p class="subtitle">{{ result.summary }}</p>
+
+                <div class="risk-box
+                    {% if result.risk == 'High' %}risk-high{% elif result.risk == 'Medium' %}risk-medium{% else %}risk-low{% endif %}">
+                    Risk Level: {{ result.risk }}
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Risk Score</div>
+                        <div class="stat-value">{{ result.score }}/100</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-label">Total Lines</div>
+                        <div class="stat-value">{{ result.total_lines }}</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-label">Failed Logins</div>
+                        <div class="stat-value">{{ result.failed_count }}</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-label">Successful Logins</div>
+                        <div class="stat-value">{{ result.success_count }}</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-label">Weird Hour Attempts</div>
+                        <div class="stat-value">{{ result.weird_hour_count }}</div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3>Why It Was Flagged</h3>
+                    <ul>
+                        {% for reason in result.reasons %}
+                            <li>{{ reason }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="section-card">
+                    <h3>Burst Detection</h3>
+                    {% if result.bursts %}
+                        <ul>
+                            {% for burst in result.bursts %}
+                                <li>
+                                    <strong>{{ burst.ip }}</strong> had
+                                    <strong>{{ burst.count }}</strong> failed attempts
+                                    within <strong>{{ burst.window_seconds }}</strong> seconds
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty">No burst behavior found.</p>
+                    {% endif %}
+                </div>
+
+                <div class="section-card">
+                    <h3>Repeated Failed IPs</h3>
+                    {% if result.repeated_failed_ips %}
+                        <ul>
+                            {% for ip, count in result.repeated_failed_ips.items() %}
+                                <li><strong>{{ ip }}</strong> — {{ count }} failed attempts</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty">No repeated failed IPs found.</p>
+                    {% endif %}
+                </div>
+
+                <div class="section-card">
+                    <h3>Suspicious Usernames</h3>
+                    {% if result.suspicious_usernames %}
+                        <ul>
+                            {% for username, count in result.suspicious_usernames.items() %}
+                                <li><strong>{{ username }}</strong> — {{ count }} attempts</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty">No suspicious usernames found.</p>
+                    {% endif %}
+                </div>
+
+                <div class="chart-card">
+                    <h3>Top Failed IPs</h3>
+                    <canvas id="ipChart"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Top Targeted Usernames</h3>
+                    <canvas id="userChart"></canvas>
+                </div>
+
+                <p class="footer-note">
+                    This is a rule-based analyzer for fast detection and learning, not a production SOC system.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if result %}
+    <script>
+        const ipLabels = {{ result.top_failed_ips | map(attribute=0) | list | tojson }};
+        const ipCounts = {{ result.top_failed_ips | map(attribute=1) | list | tojson }};
+
+        const userLabels = {{ result.top_usernames | map(attribute=0) | list | tojson }};
+        const userCounts = {{ result.top_usernames | map(attribute=1) | list | tojson }};
+
+        new Chart(document.getElementById("ipChart"), {
+            type: "bar",
+            data: {
+                labels: ipLabels,
+                datasets: [{
+                    label: "Failed Attempts",
+                    data: ipCounts
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "#e2e8f0"
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#cbd5e1" },
+                        grid: { color: "#334155" }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: "#cbd5e1" },
+                        grid: { color: "#334155" }
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById("userChart"), {
+            type: "bar",
+            data: {
+                labels: userLabels,
+                datasets: [{
+                    label: "Attempts",
+                    data: userCounts
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "#e2e8f0"
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "#cbd5e1" },
+                        grid: { color: "#334155" }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: "#cbd5e1" },
+                        grid: { color: "#334155" }
+                    }
+                }
+            }
+        });
+
+        function fillSampleLogs() {
+            const sample = `May 08 00:12:10 server sshd[1001]: Failed password for root from 192.168.1.10 port 22 ssh2
+May 08 00:12:15 server sshd[1002]: Failed password for admin from 192.168.1.10 port 22 ssh2
+May 08 00:12:20 server sshd[1003]: Failed password for root from 192.168.1.10 port 22 ssh2
+May 08 00:13:01 server sshd[1004]: Failed password for guest from 10.0.0.5 port 22 ssh2
+May 08 11:00:00 server sshd[1005]: Accepted password for ace from 172.16.0.3 port 22 ssh2
+May 08 23:40:44 server sshd[1006]: Invalid user test from 203.0.113.77 port 22
+May 08 23:40:50 server sshd[1007]: Failed password for administrator from 203.0.113.77 port 22 ssh2
+May 08 23:41:10 server sshd[1008]: Failed password for root from 203.0.113.77 port 22 ssh2
+May 08 23:41:20 server sshd[1009]: Failed password for admin from 203.0.113.77 port 22 ssh2`;
+            document.querySelector('textarea[name="log_text"]').value = sample;
+        }
+
+        function clearLogs() {
+            document.querySelector('textarea[name="log_text"]').value = "";
+        }
+    </script>
+    {% else %}
+    <script>
+        function fillSampleLogs() {
+            const sample = `May 08 00:12:10 server sshd[1001]: Failed password for root from 192.168.1.10 port 22 ssh2
+May 08 00:12:15 server sshd[1002]: Failed password for admin from 192.168.1.10 port 22 ssh2
+May 08 00:12:20 server sshd[1003]: Failed password for root from 192.168.1.10 port 22 ssh2
+May 08 00:13:01 server sshd[1004]: Failed password for guest from 10.0.0.5 port 22 ssh2
+May 08 11:00:00 server sshd[1005]: Accepted password for ace from 172.16.0.3 port 22 ssh2
+May 08 23:40:44 server sshd[1006]: Invalid user test from 203.0.113.77 port 22
+May 08 23:40:50 server sshd[1007]: Failed password for administrator from 203.0.113.77 port 22 ssh2
+May 08 23:41:10 server sshd[1008]: Failed password for root from 203.0.113.77 port 22 ssh2
+May 08 23:41:20 server sshd[1009]: Failed password for admin from 203.0.113.77 port 22 ssh2`;
+            document.querySelector('textarea[name="log_text"]').value = sample;
+        }
+
+        function clearLogs() {
+            document.querySelector('textarea[name="log_text"]').value = "";
+        }
+    </script>
+    {% endif %}
+</body>
+</html>
