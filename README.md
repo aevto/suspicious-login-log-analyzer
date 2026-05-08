@@ -27,6 +27,9 @@ A Flask web app that analyzes authentication logs and flags suspicious patterns 
 ### Visualization
 ![Visualization](assets/third.png)
 
+## Live Demo
+
+[Try the app](https://suspicious-login-log-analyzer.onrender.com)
 
 ## Run locally
 
