@@ -1,4 +1,3 @@
-cat > README.md <<'EOF'
 # Suspicious Login Log Analyzer
 
 A Flask web app that analyzes authentication logs and flags suspicious patterns such as repeated failed logins, burst behavior, unusual login times, and targeted admin-style usernames.
@@ -17,14 +16,6 @@ A Flask web app that analyzes authentication logs and flags suspicious patterns 
 - Chart.js
 - HTML/CSS
 
-## Run locally
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python app.py
-
 ## Screenshots
 
 ### Main UI
@@ -35,3 +26,13 @@ python app.py
 
 ### Visualization
 ![Visualization](assets/third.png)
+
+
+## Run locally
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py
+
